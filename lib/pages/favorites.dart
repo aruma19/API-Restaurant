@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:latres_tpm/models/Restaurant.dart';
 import 'details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -11,7 +13,7 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
-  Map<dynamic, dynamic> favorites = {};
+  List<Restaurants> favorites = [];
   bool isLoading = true;
   String? username;
 
@@ -30,7 +32,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
     username = prefs.getString('username');
     if (username == null) {
       setState(() {
-        favorites = {};
+        favorites = [];
         isLoading = false;
       });
       return;
@@ -38,31 +40,32 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
     var box = await Hive.openBox('favorites_$username');
     setState(() {
-      favorites = box.toMap();
+      favorites = box.values
+          .map((e) => Restaurants.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
       isLoading = false;
     });
   }
 
-  Future<void> _removeFavorite(dynamic id) async {
+  Future<void> _removeFavorite(Restaurants restaurant) async {
     if (username == null) return;
     var box = await Hive.openBox('favorites_$username');
-    await box.delete(id);
-
+    await box.delete(restaurant.id);
     setState(() {
-      favorites.remove(id);
+      favorites.removeWhere((r) => r.id == restaurant.id);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // <- background halaman putih
       appBar: AppBar(
-        title: const Text("Favorites", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF141E30), // <- navbar biru tua
+        title: const Text("Favorites",
+        style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF141E30),
         centerTitle: true,
         iconTheme: const IconThemeData(
-          color: Colors.white,
+        color: Colors.white,
         ),
       ),
       body: isLoading
@@ -74,9 +77,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   itemCount: favorites.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    final id = favorites.keys.elementAt(index);
-                    final item = favorites[id];
-
+                    final restaurant = favorites[index];
                     return Card(
                       color: Colors.white,
                       shape: RoundedRectangleBorder(
@@ -89,7 +90,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => DetailPage(id: id),
+                              builder: (context) =>
+                                  DetailPage(id: restaurant.id),
                             ),
                           );
                         },
@@ -98,84 +100,54 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (item['pictureId'] != null)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    'https://restaurant-api.dicoding.dev/images/small/${item['pictureId']}',
-                                    width: 120,
-                                    height: 90,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, progress) {
-                                      if (progress == null) return child;
-                                      return Container(
-                                        width: 120,
-                                        height: 90,
-                                        color: Colors.grey[300],
-                                        child: const Center(
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Container(
-                                      width: 120,
-                                      height: 90,
-                                      color: Colors.grey[300],
-                                      child: const Icon(
-                                        Icons.broken_image,
-                                        size: 40,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              else
-                                Container(
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  'https://restaurant-api.dicoding.dev/images/small/${restaurant.pictureId}',
                                   width: 120,
                                   height: 90,
-                                  color: Colors.grey[300],
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    size: 40,
-                                    color: Colors.grey,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                    width: 120,
+                                    height: 90,
+                                    color: Colors.grey[300],
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    ),
                                   ),
                                 ),
+                              ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      item['name'] ?? 'No name',
+                                      restaurant.name,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 18,
                                         color: Colors.black87,
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 6),
                                     Row(
                                       children: [
-                                        if (item['city'] != null) ...[
-                                          Icon(
-                                            Icons.location_on,
-                                            size: 16,
-                                            color: Colors.grey[600],
+                                        Icon(
+                                          Icons.location_on,
+                                          size: 16,
+                                          color: Colors.grey[600],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          restaurant.city,
+                                          style: TextStyle(
+                                            color: Colors.grey[700],
                                           ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            item['city'],
-                                            style: TextStyle(
-                                              color: Colors.grey[700],
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                         const Spacer(),
                                         IconButton(
                                           icon: const Icon(
@@ -183,7 +155,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                             color: Colors.redAccent,
                                           ),
                                           onPressed: () {
-                                            _removeFavorite(id);
+                                            _removeFavorite(restaurant);
                                           },
                                         ),
                                       ],
@@ -201,3 +173,4 @@ class _FavoritesPageState extends State<FavoritesPage> {
     );
   }
 }
+
