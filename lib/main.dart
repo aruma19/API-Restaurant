@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:latres_tpm/login_page.dart';
+import 'package:latres_tpm/pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

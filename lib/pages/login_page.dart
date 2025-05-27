@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:latres_tpm/dashboard.dart';
-import 'package:latres_tpm/register_page.dart';
+import 'package:latres_tpm/pages/dashboard.dart';
+import 'package:latres_tpm/pages/register_page.dart';
 import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
